@@ -7,30 +7,19 @@ var http = require("http"),
   app = express();
 
 var T = new twit({
-  consumer_key:         'P6TxGLffjrgGMyJ4rXvdenID8',
-  consumer_secret:      'E4MDCqqZl4inFSe1G7qLgk76BKQtRq84QNS34PQjBbUS3axqqM',
-  access_token:         '647713-UZPiNsPFbB9tnQO3YxX58TrBzlXDdZEhhg9ORPmKhdd',
-  access_token_secret:  'IBRDwAumAHhdfzYn5UtZF8sAcS7cIz7heIg8AZnSpnnwv',
+  consumer_key:         process.env.TWIHEAT_TWITTER_CONSUMER_KEY; // 'P6TxGLffjrgGMyJ4rXvdenID8',
+  consumer_secret:      process.env.TWIHEAT_TWITTER_CONSUMER_SECRET; // 'E4MDCqqZl4inFSe1G7qLgk76BKQtRq84QNS34PQjBbUS3axqqM',
+  access_token:         process.env.TWIHEAT_TWITTER_ACCESS_TOKEN; // '647713-UZPiNsPFbB9tnQO3YxX58TrBzlXDdZEhhg9ORPmKhdd',
+  access_token_secret:  process.env.TWIHEAT_TWITTER_ACCESS_TOKEN_SECRET; // 'IBRDwAumAHhdfzYn5UtZF8sAcS7cIz7heIg8AZnSpnnwv',
   timeout_ms:           60*1000,
 });
 
 var mongoURL = process.env.OPENSHIFT_MONGODB_DB_URL || process.env.MONGO_URL,
   mongoURLLabel = "",
   db = null,
-  dbDetails = new Object();
-
-var sanFrancisco = [ '-122.75', '36.8', '-121.75', '37.8' ]
-
-var stream = T.stream('statuses/filter', { locations: sanFrancisco })
-
-stream.on('tweet', function (tweet) {
-  winston.info(tweet)
-
-  if (db) {
-    var col = db.collection('tweets');
-    col.insert({tweet: tweet, date: Date.now(), location: sanFrancisco});
-  }
-})
+  dbDetails = new Object(),
+  stream = null,
+  sanFrancisco = [ '-122.75', '36.8', '-121.75', '37.8' ];
 
 app.use(morgan('combined'))
 app.use(cors());
@@ -76,13 +65,26 @@ var initDb = function(callback) {
 };
 
 // route to display versions
-app.get('/', function(req, res) {
-    res.send("Hello World");
+app.get('/_status/healthz', function(req, res) {
+    res.json({status: "ok"});
 })
 
-initDb(function(err){
+initDb(function(err) {
   winston.error('Error connecting to Mongo. Message:\n'+err);
 });
+
+if (db) {
+  stream =  T.stream('statuses/filter', { locations: sanFrancisco })
+
+  stream.on('tweet', function (tweet) {
+    winston.info(tweet)
+
+    if (db) {
+      var col = db.collection('tweets');
+      col.insert({tweet: tweet, date: Date.now(), location: sanFrancisco});
+    }
+  });
+}
 
 app.listen(8088, function () {
   winston.info("Server running at 0.0.0.0:8088/");
