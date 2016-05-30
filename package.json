@@ -1,0 +1,19 @@
+{
+  "name": "twiheat",
+  "description": "A sample application for using NodeJS...",
+  "readme": "README.md",
+  "license" : "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/goern/twiheat"
+  },
+  "main": "server.js",
+  "dependencies": {
+    "winston": "2.2.*",
+    "express": "4.13.*",
+    "cors": "2.7.*",
+    "twit": "*",
+    "mongodb": "^2.1.16",
+    "morgan": "^1.7.0"
+  }
+}
